@@ -6,6 +6,7 @@
   <title>Air Quality Monitor</title>
   <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
   <style>
     :root {
       --bg: #f8f9fa; --card: #f2f2f7; --text: #111;
@@ -42,41 +43,26 @@
       border: none; background: #007aff; color: #fff;
       border-radius: 6px; cursor: pointer;
     }
-    .data-section {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      margin-bottom: 2rem;
-    }
+    .data-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem; }
     .data-card {
       background: var(--bg); padding: 15px; border-radius: 12px;
       transition: background 0.3s;
     }
-    body.dark .data-card {
-      background: var(--card);
-    }
+    body.dark .data-card { background: var(--card); }
     .label { font-size: 0.85rem; color: #666; }
     .value { font-size: 1.4rem; font-weight: 600; margin-top: 5px; }
     .aqi-box {
       margin-top: 20px; padding: 15px; text-align: center;
       border-radius: 10px; font-size: 1.1rem; font-weight: 600;
-      padding-bottom:10px;
     }
     .aqi-good { background: #d4f4dd; color: #2c7a45; }
     .aqi-moderate { background: #fff6d1; color: #b48200; }
     .aqi-unhealthy { background: #ffd2cc; color: #8e201c; }
     .aqi-very-unhealthy { background: #ffbbbb; color: #6b0000; }
     canvas {
-      background: var(--bg);
-      border-radius: 12px;
-      margin-bottom: 30px;
+      background: var(--bg); border-radius: 12px; margin-bottom: 30px;
     }
-    footer {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 0.8rem;
-      color: #888;
-    }
+    footer { text-align: center; margin-top: 30px; font-size: 0.8rem; color: #888; }
   </style>
 </head>
 <body>
@@ -89,8 +75,7 @@
     <div class="data-section" id="gases"></div>
     <div class="data-section" id="composition"></div>
     <div id="aqiBox" class="aqi-box">Loading AQI...</div>
-    <br>
-    <br>
+
     <canvas id="co2Chart" height="200"></canvas>
     <canvas id="o2Chart" height="200"></canvas>
     <canvas id="aqiChart" height="200"></canvas>
@@ -98,10 +83,11 @@
 
   <footer>Live data powered by Firebase & NodeMCU</footer>
 
-  <!-- Firebase SDK -->
+  <script>
+    emailjs.init("-jWA7Ampoh1IJa4qZ"); // Your public key
+  </script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyC634Ru39oQtt5IfewhKb8hpt7X0SieTUs",
@@ -110,8 +96,10 @@
       projectId: "sdg-project-311ec",
       storageBucket: "sdg-project-311ec.appspot.com",
       messagingSenderId: "831077716",
-      appId: "1:831077716:web:fd9dc93f10b7d84cce9cc1"
+      appId: "1:831077716:web:fd9dc93f10b7d84cce9cc1",
+      measurementId: "G-VQMNNGGMX0"
     };
+
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database().ref("/sensorData");
 
@@ -121,52 +109,30 @@
     const charts = {
       co2: new Chart(document.getElementById("co2Chart"), {
         type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: "CO₂ (ppm)", data: [],
-            borderColor: "#28a4ec", backgroundColor: "#28a4ec33", fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: { x: { title: { display: true, text: "Time" } }, y: { beginAtZero: true } }
-        }
+        data: { labels: [], datasets: [{ label: "CO₂ (ppm)", data: [], borderColor: "#28a4ec", backgroundColor: "#28a4ec33", fill:true }] },
+        options: { responsive:true, scales:{ x:{title:{display:true,text:"Time"}}, y:{beginAtZero:true} } }
       }),
       o2: new Chart(document.getElementById("o2Chart"), {
         type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: "O₂ (%)", data: [],
-            borderColor: "#1db954", backgroundColor: "#1db95433", fill: true
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: { x: { title: { display: true, text: "Time" } }, y: { beginAtZero: true } }
-        }
+        data: { labels: [], datasets: [{ label: "O₂ (%)", data: [], borderColor: "#1db954", backgroundColor: "#1db95433", fill:true }] },
+        options: { responsive:true, scales:{ x:{title:{display:true,text:"Time"}}, y:{beginAtZero:true} } }
       }),
       aqi: new Chart(document.getElementById("aqiChart"), {
         type: 'line',
-        data: {
-          labels: [],
-          datasets: [{
-            label: "AQI", data: [],
-            borderColor: "#e63946", backgroundColor: "#e6394633", fill: true
-          }]
-        },
+        data: { labels: [], datasets: [{ label: "AQI Level", data: [], borderColor: "#e63946", backgroundColor: "#e6394633", fill:true }] },
         options: {
-          responsive: true,
-          scales: {
-            x: { title: { display: true, text: "Time" } },
-            y: {
-              ticks: { callback: val => aqiLabels[val] || "" },
-              min: 1, max: 4
+          responsive:true,
+          scales:{
+            x:{title:{display:true,text:"Time"}},
+            y:{
+              ticks:{callback: val => aqiLabels[val] || ""},
+              min:1, max:4
             }
           },
-          plugins: {
-            tooltip: { callbacks: { label: ctx => aqiLabels[ctx.raw] || "" } }
+          plugins:{
+            tooltip: {
+              callbacks: { label: ctx => aqiLabels[ctx.raw] || "" }
+            }
           }
         }
       })
@@ -180,11 +146,14 @@
         </div>`).join("");
     }
 
+    let lastSentAQI = null;
+
     db.on('value', snap => {
       const data = snap.val();
       if (!data) return;
       const arr = Object.values(data);
       const latest = arr[arr.length - 1];
+      const state = latest.AQI || "";
 
       const gases = {
         "CO₂ (ppm)": latest.ppm_CO2,
@@ -205,19 +174,33 @@
       document.getElementById("composition").innerHTML = renderCards(comp);
 
       const aqiBox = document.getElementById("aqiBox");
-      const state = latest.AQI || "";
       aqiBox.textContent = `AQI: ${state}`;
-      aqiBox.className = `aqi-box aqi-${state.toLowerCase().replace(' ', '-')}`;
+      aqiBox.className = `aqi-box aqi-${state.toLowerCase().replace(' ','-')}`;
 
-      const times = arr.map(d => new Date(d.timestamp || Date.now()).toLocaleTimeString());
-      charts.co2.data.labels = times;
-      charts.co2.data.datasets[0].data = arr.map(d => d.ppm_CO2);
-      charts.o2.data.labels = times;
-      charts.o2.data.datasets[0].data = arr.map(d => d.percentO2);
-      charts.aqi.data.labels = times;
-      charts.aqi.data.datasets[0].data = arr.map(d => aqiScale[d.AQI] || 0);
+      const times = arr.map(d => new Date(d.timestamp || Date.now()).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' }));
+      charts.co2.data.labels = times; charts.co2.data.datasets[0].data = arr.map(d => d.ppm_CO2);
+      charts.o2.data.labels = times; charts.o2.data.datasets[0].data = arr.map(d => d.percentO2);
+      charts.aqi.data.labels = times; charts.aqi.data.datasets[0].data = arr.map(d => aqiScale[d.AQI] || 0);
 
       Object.values(charts).forEach(c => c.update());
+
+      if (["Unhealthy", "Very Unhealthy"].includes(state) && lastSentAQI !== state) {
+        emailjs.send("service_j250f49", "template_pcfqf5k", {
+          to_email: "ritvikrameshwar77@gmail.com",
+          aqi: state,
+          co2: latest.ppm_CO2,
+          o2: latest.percentO2,
+          time: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+        }).then(() => {
+          console.log("✅ Alert email sent!");
+          lastSentAQI = state;
+        }).catch((err) => {
+          console.error("❌ Email failed:", err);
+        });
+      }
+      if (!["Unhealthy", "Very Unhealthy"].includes(state)) {
+        lastSentAQI = null;
+      }
     });
 
     function toggleDark() {
