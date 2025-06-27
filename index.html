@@ -35,10 +35,10 @@
       text-align: center; font-weight: 600; margin-bottom: 1.5rem;
     }
     .toggle-container {
-      text-align: right;
+      display: flex; justify-content: space-between;
       margin-bottom: 1rem;
     }
-    .toggle-btn {
+    .toggle-btn, .test-btn {
       padding: 0.5rem 1rem; font-size: 0.9rem;
       border: none; background: #007aff; color: #fff;
       border-radius: 6px; cursor: pointer;
@@ -54,14 +54,13 @@
     .aqi-box {
       margin-top: 20px; padding: 15px; text-align: center;
       border-radius: 10px; font-size: 1.1rem; font-weight: 600;
+      padding-bottom: 10px;
     }
     .aqi-good { background: #d4f4dd; color: #2c7a45; }
     .aqi-moderate { background: #fff6d1; color: #b48200; }
     .aqi-unhealthy { background: #ffd2cc; color: #8e201c; }
     .aqi-very-unhealthy { background: #ffbbbb; color: #6b0000; }
-    canvas {
-      background: var(--bg); border-radius: 12px; margin-bottom: 30px;
-    }
+    canvas { background: var(--bg); border-radius: 12px; margin-bottom: 30px; }
     footer { text-align: center; margin-top: 30px; font-size: 0.8rem; color: #888; }
   </style>
 </head>
@@ -69,6 +68,7 @@
   <div class="container">
     <div class="toggle-container">
       <button class="toggle-btn" onclick="toggleDark()">Toggle Dark Mode</button>
+      <button class="test-btn" onclick="sendTestAlert()">Send Test Alert</button>
     </div>
     <h1>Air Quality Dashboard</h1>
 
@@ -84,7 +84,7 @@
   <footer>Live data powered by Firebase & NodeMCU</footer>
 
   <script>
-    emailjs.init("-jWA7Ampoh1IJa4qZ"); // Your public key
+    emailjs.init("-jWA7Ampoh1IJa4qZ"); // Public Key
   </script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -185,18 +185,8 @@
       Object.values(charts).forEach(c => c.update());
 
       if (["Unhealthy", "Very Unhealthy"].includes(state) && lastSentAQI !== state) {
-        emailjs.send("service_j250f49", "template_pcfqf5k", {
-          to_email: "ritvikrameshwar77@gmail.com",
-          aqi: state,
-          co2: latest.ppm_CO2,
-          o2: latest.percentO2,
-          time: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
-        }).then(() => {
-          console.log("✅ Alert email sent!");
-          lastSentAQI = state;
-        }).catch((err) => {
-          console.error("❌ Email failed:", err);
-        });
+        sendEmail(state, latest.ppm_CO2, latest.percentO2);
+        lastSentAQI = state;
       }
       if (!["Unhealthy", "Very Unhealthy"].includes(state)) {
         lastSentAQI = null;
@@ -205,6 +195,24 @@
 
     function toggleDark() {
       document.body.classList.toggle('dark');
+    }
+
+    function sendEmail(aqi, co2, o2) {
+      emailjs.send("service_j250f49", "template_pcfqf5k", {
+        to_email: "ritvikrameshwar77@gmail.com",
+        aqi: aqi,
+        co2: co2,
+        o2: o2,
+        time: new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })
+      }).then(() => {
+        console.log("✅ Alert email sent!");
+      }).catch(err => {
+        console.error("❌ Email error:", err);
+      });
+    }
+
+    function sendTestAlert() {
+      sendEmail("Unhealthy (Test)", 1200, 19.5);
     }
   </script>
 </body>
