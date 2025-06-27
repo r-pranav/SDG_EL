@@ -1,120 +1,238 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF‑8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Interactive Air Quality Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #e0f7fa, #e8f0fe);
-    color: #222;
-    max-width: 900px;
-    margin: 30px auto;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  }
-  h1 { text-align: center; color: #0275d8; margin-bottom: 30px; }
-  .data-row { margin: 12px 0; font-size: 1.2em; display: flex; justify-content: space-between; }
-  .label { font-weight: 700; }
-  .value { color: #444; }
-  .aqi-good { color: green; } .aqi-moderate { color: orange; }
-  .aqi-unhealthy { color: red; } .aqi-very-unhealthy { color: darkred; }
-  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 40px; }
-  canvas { background: #fff; border-radius: 8px; padding: 10px; }
-  footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #444; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smart AQI Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #e3f2fd, #fce4ec);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #0277bd;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .data-box {
+      background: #f1f8e9;
+      padding: 15px;
+      border-left: 6px solid #66bb6a;
+      border-radius: 8px;
+    }
+
+    .data-box span {
+      display: block;
+      font-weight: 600;
+      font-size: 1em;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+
+    @media (min-width: 768px) {
+      .charts {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    canvas {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 0.85em;
+      color: #666;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Interactive Air Quality Dashboard</h1>
+<div class="container">
+  <h1>Live Air Quality Dashboard</h1>
 
-<div id="latest">
-  <div class="data-row"><span class="label">CO₂ (ppm):</span><span id="co2" class="value">…</span></div>
-  <div class="data-row"><span class="label">O₂ (%):</span><span id="oxygen" class="value">…</span></div>
-  <div class="data-row"><span class="label">AQI:</span><span id="aqi" class="value">…</span></div>
+  <div class="grid" id="liveData">
+    <!-- Dynamically filled -->
+  </div>
+
+  <div class="charts">
+    <canvas id="co2Chart"></canvas>
+    <canvas id="vocChart"></canvas>
+    <canvas id="oxygenChart"></canvas>
+    <canvas id="aqiChart"></canvas>
+  </div>
+
+  <footer>Powered by NodeMCU + Firebase • Last updated live</footer>
 </div>
 
-<div class="charts">
-  <canvas id="chartCO2"></canvas>
-  <canvas id="chartO2"></canvas>
-  <canvas id="chartAQI"></canvas>
-</div>
-
-<footer>Powered by Firebase & NodeMCU Sensor Data</footer>
-
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
 <script>
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyC634Ru39oQtt5IfewhKb8hpt7X0SieTUs",
     authDomain: "sdg-project-311ec.firebaseapp.com",
     databaseURL: "https://sdg-project-311ec-default-rtdb.asia-southeast1.firebasedatabase.app",
     projectId: "sdg-project-311ec",
-    storageBucket: "sdg-project-311ec.firebasestorage.app",
+    storageBucket: "sdg-project-311ec.appspot.com",
     messagingSenderId: "831077716",
     appId: "1:831077716:web:fd9dc93f10b7d84cce9cc1",
     measurementId: "G-VQMNNGGMX0"
   };
   firebase.initializeApp(firebaseConfig);
-  const dbRef = firebase.database().ref('/sensorData');
+  const db = firebase.database().ref("/sensorData");
 
-  // Chart.js setup
-  const config = (label, color) => ({
+  const aqiScale = { "Good": 1, "Moderate": 2, "Unhealthy": 3, "Very Unhealthy": 4 };
+  const aqiLabels = ["", "Good", "Moderate", "Unhealthy", "Very Unhealthy"];
+
+  const chartSetup = (label, color) => ({
     type: 'line',
-    options: { responsive: true, plugins:{ legend:{display:false} } },
-    data: { labels: [], datasets: [{
-      label: label, data: [], borderColor: color, backgroundColor: color+'66', fill:true, tension:0.3
-    }] }
+    data: {
+      labels: [],
+      datasets: [{
+        label,
+        data: [],
+        borderColor: color,
+        backgroundColor: color + '33',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { title: { display: true, text: 'Time (IST)' } },
+        y: { beginAtZero: true }
+      }
+    }
   });
-  const chartCO2 = new Chart(document.getElementById('chartCO2'), config('CO₂ (ppm)', '#0288d1'));
-  const chartO2 = new Chart(document.getElementById('chartO2'), config('O₂ (%)', '#2e7d32'));
-  const chartAQI = new Chart(document.getElementById('chartAQI'), config('AQI Category', '#f9a825'));
 
-  // Map AQI string to numeric for chart display
-  const aqiMap = { 'Good':1, 'Moderate':2, 'Unhealthy':3, 'Very Unhealthy':4 };
-  const aqiLabels = ['Good','Moderate','Unhealthy','Very Unhealthy'];
+  const charts = {
+    co2: new Chart(document.getElementById("co2Chart"), chartSetup("CO₂ (ppm)", "#42a5f5")),
+    voc: new Chart(document.getElementById("vocChart"), chartSetup("VOC (ppm)", "#ab47bc")),
+    oxygen: new Chart(document.getElementById("oxygenChart"), chartSetup("O₂ (%)", "#66bb6a")),
+    aqi: new Chart(document.getElementById("aqiChart"), {
+      type: 'line',
+      data: { labels: [], datasets: [{
+        label: "AQI Level",
+        data: [],
+        borderColor: "#ef5350",
+        backgroundColor: "#ef535033",
+        fill: true,
+        tension: 0.3
+      }]},
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: true },
+          tooltip: {
+            callbacks: {
+              label: ctx => aqiLabels[ctx.raw] || "Unknown"
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: val => aqiLabels[val] || "",
+              stepSize: 1
+            },
+            min: 0, max: 4
+          },
+          x: { title: { display: true, text: "Time (IST)" } }
+        }
+      }
+    })
+  };
 
-  function updateLatest(data){
-    document.getElementById('co2').textContent = data.ppm_CO2 ?? 'N/A';
-    document.getElementById('oxygen').textContent = data.percentO2 ?? 'N/A';
-    const aqi = data.AQI || data.aqi || 'N/A';
-    const aqiElem = document.getElementById('aqi');
-    aqiElem.textContent = aqi;
-    aqiElem.className = 'value ' + 'aqi-'+aqi.toLowerCase().replace(' ','-');
+  function updateLiveData(data) {
+    const container = document.getElementById('liveData');
+    container.innerHTML = ''; // Clear existing
+
+    const entries = [
+      ["CO₂ (ppm)", data.ppm_CO2],
+      ["NH₃ (ppm)", data.ppm_NH3],
+      ["NOₓ (ppm)", data.ppm_NOx],
+      ["CO (ppm)", data.ppm_CO],
+      ["VOC (ppm)", data.ppm_VOC],
+      ["Alcohol (ppm)", data.ppm_Alcohol],
+      ["O₂ (%)", data.percentO2],
+      ["N₂ (%)", data.percentN2],
+      ["CO₂ (%)", data.percentCO2],
+      ["Others (%)", data.percentOthers],
+      ["AQI", data.AQI],
+      ["Timestamp", data.timestamp]
+    ];
+
+    entries.forEach(([label, value]) => {
+      const box = document.createElement('div');
+      box.className = 'data-box';
+      box.innerHTML = `<span>${label}</span><span>${value ?? 'N/A'}</span>`;
+      container.appendChild(box);
+    });
   }
 
-  function addData(chart, label, value){
-    if(chart.data.labels.length>=20){
-      chart.data.labels.shift(); chart.data.datasets[0].data.shift();
+  function updateChart(chart, label, value) {
+    if (chart.data.labels.length >= 20) {
+      chart.data.labels.shift();
+      chart.data.datasets[0].data.shift();
     }
     chart.data.labels.push(label);
     chart.data.datasets[0].data.push(value);
     chart.update();
   }
 
-  dbRef.on('value', snap => {
-    const allData = snap.val();
-    if(!allData) return;
+  db.on("value", snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
+    const sorted = Object.entries(data).sort((a, b) => a[0].localeCompare(b[0])).slice(-20);
 
-    const entries = Object.entries(allData).sort((a,b)=>b[0].localeCompare(a[0]));
-    const latest = entries[0][1];
-    updateLatest(latest);
-
-    chartCO2.data.labels = []; chartCO2.data.datasets[0].data = [];
-    chartO2.data.labels = []; chartO2.data.datasets[0].data = [];
-    chartAQI.data.labels = []; chartAQI.data.datasets[0].data = [];
-
-    entries.slice(0,20).reverse().forEach(([key, d])=>{
-      const ts = new Date(d.timestamp || '').toLocaleTimeString();
-      addData(chartCO2, ts, d.ppm_CO2);
-      addData(chartO2, ts, d.percentO2);
-      addData(chartAQI, ts, aqiMap[d.AQI] || 0);
+    sorted.forEach(([key, val]) => {
+      const time = new Date(val.timestamp || "").toLocaleTimeString("en-IN", { hour12: false, timeZone: "Asia/Kolkata" });
+      updateChart(charts.co2, time, val.ppm_CO2);
+      updateChart(charts.voc, time, val.ppm_VOC);
+      updateChart(charts.oxygen, time, val.percentO2);
+      updateChart(charts.aqi, time, aqiScale[val.AQI] || 0);
     });
+
+    const latest = sorted[sorted.length - 1][1];
+    updateLiveData(latest);
   });
 </script>
+
 </body>
 </html>
