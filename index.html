@@ -35,15 +35,24 @@
       text-align: center; font-weight: 600; margin-bottom: 1.5rem;
     }
     .toggle-container {
-      display: flex; justify-content: space-between;
-      margin-bottom: 1rem;
+      display: flex; justify-content: space-between; flex-wrap: wrap;
+      gap: 10px; margin-bottom: 1rem;
     }
     .toggle-btn, .test-btn {
       padding: 0.5rem 1rem; font-size: 0.9rem;
       border: none; background: #007aff; color: #fff;
       border-radius: 6px; cursor: pointer;
+      flex: 1 1 45%; text-align: center;
     }
-    .data-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 2rem; }
+    .data-section {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 15px; margin-bottom: 2rem;
+    }
+    @media (max-width: 600px) {
+      .data-section {
+        grid-template-columns: 1fr;
+      }
+    }
     .data-card {
       background: var(--bg); padding: 15px; border-radius: 12px;
       transition: background 0.3s;
@@ -59,8 +68,14 @@
     .aqi-moderate { background: #fff6d1; color: #b48200; }
     .aqi-unhealthy { background: #ffd2cc; color: #8e201c; }
     .aqi-very-unhealthy { background: #ffbbbb; color: #6b0000; }
-    canvas { background: var(--bg); border-radius: 12px; margin-bottom: 30px; }
-    footer { text-align: center; margin-top: 30px; font-size: 0.8rem; color: #888; }
+    canvas {
+      background: var(--bg); border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    footer {
+      text-align: center; margin-top: 30px;
+      font-size: 0.8rem; color: #888;
+    }
   </style>
 </head>
 <body>
@@ -69,6 +84,7 @@
       <button class="toggle-btn" onclick="toggleDark()">Toggle Dark Mode</button>
       <button class="test-btn" onclick="sendTestAlert()">Send Test Alert</button>
     </div>
+
     <h1>Air Quality Dashboard</h1>
 
     <div class="data-section" id="gases"></div>
@@ -83,7 +99,7 @@
   <footer>Live data powered by Firebase & NodeMCU</footer>
 
   <script>
-    emailjs.init("-jWA7Ampoh1IJa4qZ"); // Public Key
+    emailjs.init("-jWA7Ampoh1IJa4qZ");
   </script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -198,7 +214,7 @@
 
     function sendEmail(aqi, co2, o2) {
       emailjs.send("service_j250f49", "template_pcfqf5k", {
-        to_email: "ritvikrameshwar77@gmail.com",
+        to_email: "raopranav2004@gmail.com",
         aqi: aqi,
         co2: co2,
         o2: o2,
@@ -211,7 +227,8 @@
     }
 
     function sendTestAlert() {
-      sendEmail("Unhealthy (Test)", 1200, 19.5);
+      if (navigator.vibrate) navigator.vibrate(200);
+      sendEmail("Test Alert: Unhealthy", 1200, 19.5);
     }
   </script>
 </body>
