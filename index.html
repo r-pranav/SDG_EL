@@ -81,7 +81,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
 <script>
-  // Your provided Firebase config
+  // Your Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyC634Ru39oQtt5IfewhKb8hpt7X0SieTUs",
     authDomain: "sdg-project-311ec.firebaseapp.com",
@@ -93,11 +93,29 @@
     measurementId: "G-VQMNNGGMX0"
   };
 
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
 
-  // Reference your sensor data node
   const sensorRef = firebase.database().ref('/sensorData');
+
+  sensorRef.on('value', snapshot => {
+    const allData = snapshot.val();
+    if (!allData) {
+      console.warn("No data found");
+      return;
+    }
+
+    // Convert data object to entries array and sort descending by key (latest first)
+    const entries = Object.entries(allData);
+    entries.sort((a, b) => (a[0] < b[0]) ? 1 : -1);
+
+    // Get latest sensor data object
+    const latestData = entries[0][1];
+    console.log("Latest sensor data:", latestData);
+
+    updateData(latestData);
+  }, error => {
+    console.error("Firebase read error:", error);
+  });
 
   function updateData(data) {
     if (!data) return;
@@ -118,7 +136,6 @@
     const aqiElem = document.getElementById('aqi');
     aqiElem.textContent = aqi;
 
-    // Color coding AQI
     aqiElem.className = "value ";
     switch (aqi.toLowerCase()) {
       case "good": aqiElem.classList.add("aqi-good"); break;
@@ -127,15 +144,6 @@
       case "very unhealthy": aqiElem.classList.add("aqi-very-unhealthy"); break;
     }
   }
-
-  // Listen for live changes in Firebase database
-  sensorRef.on('value', snapshot => {
-    const data = snapshot.val();
-    console.log("Live data received:", data);
-    updateData(data);
-  }, error => {
-    console.error("Error reading Firebase data:", error);
-  });
 </script>
 
 </body>
