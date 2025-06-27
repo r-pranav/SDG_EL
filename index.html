@@ -7,8 +7,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-
   <style>
     :root {
       --bg-light: #fefefe;
@@ -53,12 +51,12 @@
 
     .card {
       max-width: 900px;
-      margin: 30px auto;
+      margin: auto;
       padding: 20px;
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.6);
       backdrop-filter: blur(5px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
     }
 
     .dark .card {
@@ -67,8 +65,7 @@
 
     canvas {
       width: 100% !important;
-      height: 300px !important;
-      margin-top: 30px;
+      max-height: 280px;
     }
 
     .label-value {
@@ -104,6 +101,7 @@
 </div>
 
 <script>
+  // Firebase Config
   const firebaseConfig = {
     apiKey: "AIzaSyC634Ru39oQtt5IfewhKb8hpt7X0SieTUs",
     authDomain: "sdg-project-311ec.firebaseapp.com",
@@ -117,6 +115,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database().ref("/sensorData");
 
+  // DOM Update
   function updateLive(data) {
     const container = document.getElementById("liveValues");
     container.innerHTML = "";
@@ -144,8 +143,10 @@
     }
   }
 
+  // Dark mode toggle
   function toggleDark() {
     const isDark = document.body.classList.toggle("dark");
+
     const textColor = isDark ? '#eee' : '#111';
     const gridColor = isDark ? '#444' : '#ccc';
 
@@ -160,29 +161,29 @@
     });
   }
 
+  // Graphs
   const charts = {
     co2: new Chart(document.getElementById("chartCO2"), {
       type: 'line',
       data: { labels: [], datasets: [{ label: "CO₂ (ppm)", data: [], borderColor: "#e74c3c", fill: false }] },
-      options: getChartOptions("CO₂ (ppm)")
+      options: chartOptions("CO₂ (ppm)")
     }),
     voc: new Chart(document.getElementById("chartVOC"), {
       type: 'line',
       data: { labels: [], datasets: [{ label: "VOC (ppm)", data: [], borderColor: "#8e44ad", fill: false }] },
-      options: getChartOptions("VOC (ppm)")
+      options: chartOptions("VOC (ppm)")
     }),
     o2: new Chart(document.getElementById("chartO2"), {
       type: 'line',
-      data: { labels: [], datasets: [{ label: "O₂ (%)", data: [], borderColor: "#3498db", fill: false }] },
-      options: getChartOptions("O₂ (%)")
+      data: { labels: [], datasets: [{ label: "Oxygen (%)", data: [], borderColor: "#3498db", fill: false }] },
+      options: chartOptions("O₂ (%)")
     })
   };
 
-  function getChartOptions(yLabel) {
+  function chartOptions(yLabel) {
     return {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
       scales: {
         x: {
           title: { display: true, text: "Time" },
@@ -200,26 +201,12 @@
           backgroundColor: '#fff',
           titleColor: '#111',
           bodyColor: '#111'
-        },
-        zoom: {
-          pan: {
-            enabled: true,
-            mode: 'xy'
-          },
-          zoom: {
-            pinch: {
-              enabled: true
-            },
-            wheel: {
-              enabled: true
-            },
-            mode: 'xy'
-          }
         }
       }
     };
   }
 
+  // Fetch and Update Data
   db.limitToLast(50).on('value', snapshot => {
     const data = snapshot.val();
     if (!data) return;
