@@ -1,203 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Air Quality Dashboard</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
-
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
-      color: #222;
-      margin: 0;
-      padding: 0 20px 40px;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    h1 {
-      margin: 40px 0 20px;
-      font-weight: 700;
-      color: #0B3D91;
-      letter-spacing: 2px;
-      text-align: center;
-    }
-
-    .card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      padding: 30px 40px;
-      max-width: 480px;
-      width: 100%;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-
-    .section-title {
-      font-weight: 700;
-      font-size: 1.4rem;
-      color: #0B3D91;
-      margin-bottom: 16px;
-      border-bottom: 2px solid #74ebd5;
-      display: inline-block;
-      padding-bottom: 6px;
-    }
-
-    .data-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .data-list li {
-      font-size: 1.1rem;
-      padding: 10px 0;
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #eee;
-      color: #444;
-    }
-
-    .data-list li:last-child {
-      border-bottom: none;
-    }
-
-    .label {
-      font-weight: 600;
-    }
-
-    .value {
-      font-weight: 700;
-      min-width: 70px;
-      text-align: right;
-    }
-
-    /* AQI colors */
-    .aqi {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-top: 20px;
-      padding: 12px 20px;
-      border-radius: 30px;
-      display: inline-block;
-      color: white;
-      user-select: none;
-      transition: background-color 0.3s ease;
-    }
-
-    .aqi.good { background-color: #2e7d32; }          /* Green */
-    .aqi.moderate { background-color: #f9a825; }      /* Amber */
-    .aqi.unhealthy { background-color: #c62828; }     /* Red */
-    .aqi['very unhealthy'], .aqi.veryUnhealthy {
-      background-color: #6a1b1b;                      /* Dark Red */
-    }
-
-    footer {
-      margin-top: auto;
-      padding: 10px 0;
-      color: #ddd;
-      font-size: 0.85rem;
-      text-align: center;
-    }
-
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Live Air Quality Dashboard</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f7f9fc;
+    color: #222;
+    max-width: 600px;
+    margin: 30px auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 0.1);
+  }
+  h1 {
+    text-align: center;
+    color: #0275d8;
+    margin-bottom: 30px;
+  }
+  .data-row {
+    margin: 12px 0;
+    font-size: 1.2em;
+  }
+  .label {
+    font-weight: 700;
+  }
+  .value {
+    margin-left: 8px;
+    color: #444;
+  }
+  .aqi-good { color: green; }
+  .aqi-moderate { color: orange; }
+  .aqi-unhealthy { color: red; }
+  .aqi-very-unhealthy { color: darkred; }
+  hr {
+    margin: 25px 0;
+    border-color: #ccc;
+  }
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 0.9em;
+    color: #666;
+  }
+</style>
 </head>
 <body>
 
-  <h1>Air Quality Dashboard</h1>
+<h1>Live Air Quality Dashboard</h1>
 
-  <div class="card">
-    <div class="section-title">Gas Concentrations (ppm)</div>
-    <ul class="data-list">
-      <li><span class="label">CO₂:</span> <span id="co2" class="value">--</span></li>
-      <li><span class="label">NH₃:</span> <span id="nh3" class="value">--</span></li>
-      <li><span class="label">NOₓ:</span> <span id="nox" class="value">--</span></li>
-      <li><span class="label">CO:</span> <span id="co" class="value">--</span></li>
-      <li><span class="label">VOC:</span> <span id="voc" class="value">--</span></li>
-      <li><span class="label">Alcohol:</span> <span id="alcohol" class="value">--</span></li>
-    </ul>
+<div id="data">
+  <div class="data-row"><span class="label">CO₂ (ppm):</span><span id="co2" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">NH₃ (ppm):</span><span id="nh3" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">NOₓ (ppm):</span><span id="nox" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">CO (ppm):</span><span id="co" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">VOC (ppm):</span><span id="voc" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">Alcohol/Smoke (ppm):</span><span id="alcohol" class="value">Loading...</span></div>
+
+  <hr />
+
+  <div class="data-row"><span class="label">Oxygen (%):</span><span id="oxygen" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">Nitrogen (%):</span><span id="nitrogen" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">Carbon Dioxide (%):</span><span id="carbonDioxide" class="value">Loading...</span></div>
+  <div class="data-row"><span class="label">Other gases (%):</span><span id="others" class="value">Loading...</span></div>
+
+  <hr />
+
+  <div class="data-row">
+    <span class="label">Air Quality Index:</span>
+    <span id="aqi" class="value">Loading...</span>
   </div>
+</div>
 
-  <div class="card">
-    <div class="section-title">Air Composition (%)</div>
-    <ul class="data-list">
-      <li><span class="label">Oxygen (O₂):</span> <span id="oxygen" class="value">--</span></li>
-      <li><span class="label">Nitrogen (N₂):</span> <span id="nitrogen" class="value">--</span></li>
-      <li><span class="label">Carbon Dioxide (CO₂):</span> <span id="carbonDioxide" class="value">--</span></li>
-      <li><span class="label">Other gases:</span> <span id="others" class="value">--</span></li>
-    </ul>
+<footer>Powered by Firebase & NodeMCU Sensor Data</footer>
 
-    <div id="aqi" class="aqi">Loading AQI...</div>
-  </div>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
-  <footer>
-    Powered by Firebase & ESP8266 NodeMCU & ChatGPT
-  </footer>
+<script>
+  // Your provided Firebase config
+  const firebaseConfig = {
+    apiKey: "AIzaSyC634Ru39oQtt5IfewhKb8hpt7X0SieTUs",
+    authDomain: "sdg-project-311ec.firebaseapp.com",
+    databaseURL: "https://sdg-project-311ec-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "sdg-project-311ec",
+    storageBucket: "sdg-project-311ec.firebasestorage.app",
+    messagingSenderId: "831077716",
+    appId: "1:831077716:web:fd9dc93f10b7d84cce9cc1",
+    measurementId: "G-VQMNNGGMX0"
+  };
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
 
-  <script>
-    // Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyC634Ru39oQtt5IfewhKb8hpt7X0SieTUs",
-      authDomain: "sdg-project-311ec.firebaseapp.com",
-      databaseURL: "https://sdg-project-311ec-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "sdg-project-311ec",
-      storageBucket: "sdg-project-311ec.firebasedestorage.app",
-      messagingSenderId: "831077716",
-      appId: "1:831077716:web:fd9dc93f10b7d84cce9cc1",
-      measurementId: "G-VQMNNGGMX0"
-    };
+  // Reference your sensor data node
+  const sensorRef = firebase.database().ref('/sensorData');
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    const sensorRef = db.ref('/sensorData');
+  function updateData(data) {
+    if (!data) return;
 
-    // Update UI with live data
-    function updateUI(data) {
-      if (!data) return;
+    document.getElementById('co2').textContent = data.ppm_CO2 ?? 'N/A';
+    document.getElementById('nh3').textContent = data.ppm_NH3 ?? 'N/A';
+    document.getElementById('nox').textContent = data.ppm_NOx ?? 'N/A';
+    document.getElementById('co').textContent = data.ppm_CO ?? 'N/A';
+    document.getElementById('voc').textContent = data.ppm_VOC ?? 'N/A';
+    document.getElementById('alcohol').textContent = data.ppm_Alcohol ?? 'N/A';
 
-      document.getElementById('co2').textContent = data.ppm_CO2?.toFixed(0) || '--';
-      document.getElementById('nh3').textContent = data.ppm_NH3?.toFixed(2) || '--';
-      document.getElementById('nox').textContent = data.ppm_NOx?.toFixed(2) || '--';
-      document.getElementById('co').textContent = data.ppm_CO?.toFixed(2) || '--';
-      document.getElementById('voc').textContent = data.ppm_VOC?.toFixed(2) || '--';
-      document.getElementById('alcohol').textContent = data.ppm_Alcohol?.toFixed(2) || '--';
+    document.getElementById('oxygen').textContent = data.percentO2 ?? 'N/A';
+    document.getElementById('nitrogen').textContent = data.percentN2 ?? 'N/A';
+    document.getElementById('carbonDioxide').textContent = data.percentCO2 ?? 'N/A';
+    document.getElementById('others').textContent = data.percentOthers ?? 'N/A';
 
-      document.getElementById('oxygen').textContent = data.percentO2?.toFixed(2) || '--';
-      document.getElementById('nitrogen').textContent = data.percentN2?.toFixed(2) || '--';
-      document.getElementById('carbonDioxide').textContent = data.percentCO2?.toFixed(4) || '--';
-      document.getElementById('others').textContent = data.percentOthers?.toFixed(2) || '--';
+    const aqi = data.AQI || data.Aqi || data.aqi || "N/A";
+    const aqiElem = document.getElementById('aqi');
+    aqiElem.textContent = aqi;
 
-      const aqi = data.AQI || 'Unknown';
-      const aqiElem = document.getElementById('aqi');
-      aqiElem.textContent = aqi;
-
-      aqiElem.className = 'aqi'; // reset classes
-      switch (aqi.toLowerCase()) {
-        case 'good': aqiElem.classList.add('good'); break;
-        case 'moderate': aqiElem.classList.add('moderate'); break;
-        case 'unhealthy': aqiElem.classList.add('unhealthy'); break;
-        case 'very unhealthy': aqiElem.classList.add('veryUnhealthy'); break;
-      }
+    // Color coding AQI
+    aqiElem.className = "value ";
+    switch (aqi.toLowerCase()) {
+      case "good": aqiElem.classList.add("aqi-good"); break;
+      case "moderate": aqiElem.classList.add("aqi-moderate"); break;
+      case "unhealthy": aqiElem.classList.add("aqi-unhealthy"); break;
+      case "very unhealthy": aqiElem.classList.add("aqi-very-unhealthy"); break;
     }
+  }
 
-    // Listen for changes in Firebase DB
-    sensorRef.on('value', snapshot => {
-      const data = snapshot.val();
-      updateUI(data);
-    }, error => {
-      console.error("Firebase DB read error:", error);
-    });
-  </script>
+  // Listen for live changes in Firebase database
+  sensorRef.on('value', snapshot => {
+    const data = snapshot.val();
+    console.log("Live data received:", data);
+    updateData(data);
+  }, error => {
+    console.error("Error reading Firebase data:", error);
+  });
+</script>
 
 </body>
 </html>
